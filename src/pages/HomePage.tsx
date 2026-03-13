@@ -1,16 +1,20 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import ProfileCard from '@/components/profile/ProfileCard';
+import Navbar from '@/components/layout/Navbar';
+import HeroSection from '@/components/sections/HeroSection';
+import AboutSection from '@/components/sections/AboutSection';
+import FloatingChat from '@/components/chat/FloatingChat';
 import EditProfileDialog from '@/components/profile/EditProfileDialog';
-import ChatInterface from '@/components/chat/ChatInterface';
+import EditAvatarDialog from '@/components/profile/EditAvatarDialog';
 import { getProfile } from '@/db/api';
 import type { Profile } from '@/types/index';
 
 export default function HomePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editProfileDialogOpen, setEditProfileDialogOpen] = useState(false);
+  const [editAvatarDialogOpen, setEditAvatarDialogOpen] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -51,41 +55,42 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        {/* 页面标题 */}
-        <div className="text-center mb-8 md:mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold gradient-text mb-4">
-            欢迎来到我的个人主页
-          </h1>
-          <p className="text-muted-foreground text-sm md:text-base">
-            了解我，或与我的数字分身聊天
-          </p>
-        </div>
+      {/* 顶部导航栏 */}
+      <Navbar
+        profile={profile}
+        onEditProfile={() => setEditProfileDialogOpen(true)}
+        onEditAvatar={() => setEditAvatarDialogOpen(true)}
+      />
 
-        {/* 主要内容区域 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 max-w-7xl mx-auto">
-          {/* 左侧：个人信息 */}
-          <div className="flex flex-col">
-            <ProfileCard profile={profile} onEdit={() => setEditDialogOpen(true)} />
-          </div>
+      {/* 第一页：Hero Section */}
+      <HeroSection profile={profile} />
 
-          {/* 右侧：聊天界面 */}
-          <div className="flex flex-col">
-            <ChatInterface />
-          </div>
-        </div>
+      {/* 第二页：详细信息 */}
+      <AboutSection profile={profile} />
 
-        {/* 页脚 */}
-        <footer className="text-center mt-12 md:mt-16 text-sm text-muted-foreground">
-          <p>© 2026 二川的个人主页</p>
-        </footer>
-      </div>
+      {/* 页脚 */}
+      <footer className="text-center py-8 text-sm text-muted-foreground border-t">
+        <p>© 2026 二川的个人主页</p>
+      </footer>
 
-      {/* 编辑对话框 */}
+      {/* 悬浮聊天窗口 */}
+      <FloatingChat />
+
+      {/* 编辑个人资料对话框 */}
       {profile && (
         <EditProfileDialog
-          open={editDialogOpen}
-          onOpenChange={setEditDialogOpen}
+          open={editProfileDialogOpen}
+          onOpenChange={setEditProfileDialogOpen}
+          profile={profile}
+          onSuccess={loadProfile}
+        />
+      )}
+
+      {/* 编辑头像对话框 */}
+      {profile && (
+        <EditAvatarDialog
+          open={editAvatarDialogOpen}
+          onOpenChange={setEditAvatarDialogOpen}
           profile={profile}
           onSuccess={loadProfile}
         />
