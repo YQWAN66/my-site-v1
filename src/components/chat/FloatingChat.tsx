@@ -3,13 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Loader2, Bot, MessageCircle, X, Minus } from 'lucide-react';
+import { Send, Loader2, Bot, MessageCircle, X, Minus, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import MessageBubble from '@/components/chat/MessageBubble';
 import { sendStreamRequest } from '@/utils/stream';
-import { saveChatMessage, getChatMessages } from '@/db/api';
+import { saveChatMessage } from '@/db/api';
 import type { ChatMessage } from '@/types/index';
 import { cn } from '@/lib/utils';
+
+// 常见问题
+const commonQuestions = [
+  '介绍下你自己？',
+  '你是男生吗？',
+  '二川是谁？',
+  '有什么项目经验？'
+];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -22,13 +30,32 @@ export default function FloatingChat() {
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [showCommonQuestions, setShowCommonQuestions] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // 加载历史消息
+  // 当聊天窗口打开时，发送欢迎语
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      loadChatHistory();
+      // 发送欢迎语
+      const welcomeMessage: ChatMessage = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: '哈喽，我是二川的AI助手，你有什么想和我聊的吗？',
+        created_at: new Date().toISOString()
+      };
+      setMessages([welcomeMessage]);
+      setShowCommonQuestions(true);
+    }
+  }, [isOpen]);
+
+  // 当聊天窗口关闭时，清空消息
+  useEffect(() => {
+    if (!isOpen) {
+      setMessages([]);
+      setStreamingContent('');
+      setInput('');
+      setShowCommonQuestions(false);
     }
   }, [isOpen]);
 
@@ -42,9 +69,11 @@ export default function FloatingChat() {
     }
   }, [messages, streamingContent, isOpen]);
 
-  const loadChatHistory = async () => {
-    const history = await getChatMessages();
-    setMessages(history);
+  // 处理常见问题点击
+  const handleCommonQuestionClick = async (question: string) => {
+    setShowCommonQuestions(false);
+    setInput(question);
+    await handleSend();
   };
 
   const handleSend = async () => {
@@ -55,6 +84,7 @@ export default function FloatingChat() {
     setIsLoading(true);
     setStreamingContent('');
     setIsStreaming(true);
+    setShowCommonQuestions(false);
 
     await saveChatMessage('user', userMessage);
     
@@ -184,14 +214,6 @@ export default function FloatingChat() {
             <CardContent className="p-0 flex flex-col h-[calc(100%-57px)]">
               {/* 消息列表 */}
               <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-                {messages.length === 0 && !streamingContent && (
-                  <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
-                    <Bot className="w-12 h-12 mb-4 opacity-50" />
-                    <p className="text-sm">你好！我是二川的数字分身</p>
-                    <p className="text-xs mt-2">有什么想了解的吗？</p>
-                  </div>
-                )}
-
                 {messages.map((message) => (
                   <MessageBubble
                     key={message.id}
@@ -206,6 +228,26 @@ export default function FloatingChat() {
                     content={streamingContent}
                     isStreaming={isStreaming}
                   />
+                )}
+
+                {/* 常见问题 */}
+                {showCommonQuestions && messages.length > 0 && !streamingContent && (
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs text-muted-foreground mb-2">常见问题：</p>
+                    <div className="grid grid-cols-1 gap-2">
+                      {commonQuestions.map((question, index) => (
+                        <Button
+                          key={index}
+                          variant="ghost"
+                          className="justify-start text-sm text-left p-3 hover:bg-primary/5"
+                          onClick={() => handleCommonQuestionClick(question)}
+                        >
+                          <ChevronRight className="w-4 h-4 mr-2 text-muted-foreground" />
+                          {question}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </ScrollArea>
 
