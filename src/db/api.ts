@@ -58,22 +58,6 @@ export async function updateProfile(
   return true;
 }
 
-// 获取聊天历史（最近20条）
-export async function getChatMessages(): Promise<ChatMessage[]> {
-  const { data, error } = await supabase
-    .from('chat_messages')
-    .select('*')
-    .order('created_at', { ascending: true })
-    .limit(20);
-
-  if (error) {
-    console.error('获取聊天历史失败:', error);
-    return [];
-  }
-
-  return Array.isArray(data) ? data : [];
-}
-
 // 保存聊天消息
 export async function saveChatMessage(
   role: 'user' | 'assistant',
