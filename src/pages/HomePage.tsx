@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import Navbar from '@/components/layout/Navbar';
+import FloatingContact from '@/components/layout/FloatingContact';
 import HeroSection from '@/components/sections/HeroSection';
 import AboutSection from '@/components/sections/AboutSection';
 import FloatingChat from '@/components/chat/FloatingChat';
@@ -75,6 +76,9 @@ export default function HomePage() {
 
       {/* 悬浮聊天窗口 */}
       <FloatingChat />
+
+      {/* 悬浮联系方式 */}
+      <FloatingContact />
 
       {/* 编辑个人资料对话框 */}
       {profile && (

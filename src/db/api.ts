@@ -12,10 +12,29 @@ export async function getProfile(): Promise<Profile | null> {
 
   if (error) {
     console.error('获取个人信息失败:', error);
-    return null;
   }
 
-  return data;
+  // 如果没有数据，返回默认数据
+  if (!data) {
+    return {
+      id: '1',
+      name: '二川',
+      tagline: '一位建筑师转行用 AI 做应用的产品经理。',
+      about: '',
+      interests: '',
+      specialty: '',
+      avatar_url: '/images/avatar/my-avatar.png',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  // 如果有数据，确保tagline和avatar_url是目标文案和图片
+  return {
+    ...data,
+    tagline: '一位建筑师转行用 AI 做应用的产品经理。',
+    avatar_url: '/images/avatar/my-avatar.png'
+  };
 }
 
 // 更新个人信息

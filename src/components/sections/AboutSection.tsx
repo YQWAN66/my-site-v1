@@ -22,9 +22,9 @@ const projects = [
     image: 'project-customer-service.jpg',
   },
   {
-    title: '个人主页网站',
-    description: '展示个人作品与经验',
-    icon: '🌐',
+    title: 'Opneclaw 多Agent协同',
+    description: '探索多Agent协同范式',
+    icon: '',
     image: 'project-personal-website.jpg',
   },
   {
@@ -67,11 +67,11 @@ export default function AboutSection({ profile }: AboutSectionProps) {
   return (
     <section className="min-h-screen py-20 px-4">
       <div className="container mx-auto max-w-6xl space-y-16">
-        {/* 现在主要在做 */}
+        {/* 产品创新 */}
         <div className="space-y-8">
           <div className="text-center space-y-2">
-            <Badge variant="outline" className="text-base px-4 py-2">
-              💼 现在主要在做
+            <Badge variant="outline" className="text-2xl px-4 py-2 border-none bg-transparent shadow-none">
+              产品创新
             </Badge>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -99,11 +99,11 @@ export default function AboutSection({ profile }: AboutSectionProps) {
           </div>
         </div>
 
-        {/* 兴趣 */}
+        {/* 职业兴趣 */}
         <div className="space-y-8">
           <div className="text-center space-y-2">
-            <Badge variant="outline" className="text-base px-4 py-2">
-              ⚡ 兴趣
+            <Badge variant="outline" className="text-2xl px-4 py-2 border-none bg-transparent shadow-none">
+              职业兴趣
             </Badge>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
@@ -130,11 +130,11 @@ export default function AboutSection({ profile }: AboutSectionProps) {
           </div>
         </div>
 
-        {/* 个人特色特点 */}
+        {/* 深度洞察 */}
         <div className="space-y-8">
           <div className="text-center space-y-2">
-            <Badge variant="outline" className="text-base px-4 py-2">
-              ✨ 特色特点
+            <Badge variant="outline" className="text-2xl px-4 py-2 border-none bg-transparent shadow-none">
+              深度洞察
             </Badge>
           </div>
           <Card className="border-primary/20 shadow-lg">
