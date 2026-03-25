@@ -1,165 +1,55 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, Loader2, Bot, MessageCircle, X, Minus, ChevronRight } from 'lucide-react';
-import { toast } from 'sonner';
-import MessageBubble from '@/components/chat/MessageBubble';
-import { sendStreamRequest } from '@/utils/stream';
-import { saveChatMessage } from '@/db/api';
-import type { ChatMessage } from '@/types/index';
+import { Bot, MessageCircle, X, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// 常见问题
-const commonQuestions = [
-  '介绍下你自己？',
-  '你是男生吗？',
-  '二川是谁？',
-  '有什么项目经验？'
-];
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export default function FloatingChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [streamingContent, setStreamingContent] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [showCommonQuestions, setShowCommonQuestions] = useState(true);
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
-
-  // 当聊天窗口打开时，发送欢迎语
-  useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      // 发送欢迎语
-      const welcomeMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: '哈喽，我是二川的AI助手，你有什么想和我聊的吗？',
-        created_at: new Date().toISOString()
-      };
-      setMessages([welcomeMessage]);
-      setShowCommonQuestions(true);
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: '您好，我是二川，有什么我可以帮助您的吗？',
+      sender: 'bot'
     }
-  }, [isOpen]);
+  ]);
 
-  // 当聊天窗口关闭时，清空消息
-  useEffect(() => {
-    if (!isOpen) {
-      setMessages([]);
-      setStreamingContent('');
-      setInput('');
-      setShowCommonQuestions(false);
-    }
-  }, [isOpen]);
+  // 常见问题列表
+  const commonQuestions = [
+    '介绍下你自己？',
+    '你是男生吗？',
+    '你能做什么？'
+  ];
 
-  // 自动滚动到底部
-  useEffect(() => {
-    if (scrollAreaRef.current && isOpen) {
-      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+  // 模拟发送消息
+  const sendMessage = (text: string) => {
+    // 添加用户消息
+    setMessages([
+      ...messages,
+      {
+        id: Date.now(),
+        text,
+        sender: 'user'
       }
-    }
-  }, [messages, streamingContent, isOpen]);
+    ]);
 
-  // 处理常见问题点击
-  const handleCommonQuestionClick = async (question: string) => {
-    setShowCommonQuestions(false);
-    setInput(question);
-    await handleSend();
-  };
-
-  const handleSend = async () => {
-    const userMessage = input.trim();
-    if (!userMessage || isLoading) return;
-
-    setInput('');
-    setIsLoading(true);
-    setStreamingContent('');
-    setIsStreaming(true);
-    setShowCommonQuestions(false);
-
-    await saveChatMessage('user', userMessage);
-    
-    const newUserMessage: ChatMessage = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: userMessage,
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, newUserMessage]);
-
-    const chatHistory = [...messages, newUserMessage].map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
-    abortControllerRef.current = new AbortController();
-
-    try {
-      let fullContent = '';
-
-      await sendStreamRequest({
-        functionUrl: `${SUPABASE_URL}/functions/v1/chat`,
-        requestBody: { messages: chatHistory },
-        supabaseAnonKey: SUPABASE_ANON_KEY,
-        onData: (data) => {
-          try {
-            const parsed = JSON.parse(data);
-            const chunk = parsed.content || '';
-            fullContent += chunk;
-            setStreamingContent(fullContent);
-          } catch (e) {
-            console.warn('解析数据失败:', e);
-          }
+    // 模拟机器人回复
+    setTimeout(() => {
+      setMessages([
+        ...messages,
+        {
+          id: Date.now(),
+          text,
+          sender: 'user'
         },
-        onComplete: async () => {
-          setIsStreaming(false);
-          setIsLoading(false);
-
-          if (fullContent) {
-            await saveChatMessage('assistant', fullContent);
-            
-            const assistantMessage: ChatMessage = {
-              id: crypto.randomUUID(),
-              role: 'assistant',
-              content: fullContent,
-              created_at: new Date().toISOString(),
-            };
-            setMessages((prev) => [...prev, assistantMessage]);
-            setStreamingContent('');
-          }
-        },
-        onError: (error) => {
-          console.error('聊天请求失败:', error);
-          toast.error('发送消息失败，请重试');
-          setIsStreaming(false);
-          setIsLoading(false);
-          setStreamingContent('');
-        },
-        signal: abortControllerRef.current.signal,
-      });
-    } catch (error) {
-      console.error('发送消息错误:', error);
-      toast.error('发送消息失败');
-      setIsStreaming(false);
-      setIsLoading(false);
-      setStreamingContent('');
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+        {
+          id: Date.now() + 1,
+          text: `您刚才问的是："${text}"\n这是一个模拟回复，实际项目中可以连接到真实的AI服务。`,
+          sender: 'bot'
+        }
+      ]);
+    }, 1000);
   };
 
   return (
@@ -209,71 +99,43 @@ export default function FloatingChat() {
             </div>
           </CardHeader>
 
-          {/* 内容区域 */}
+          {/* 内容区域 - 本地聊天界面 */}
           {!isMinimized && (
-            <CardContent className="p-0 flex flex-col h-[calc(100%-57px)]">
-              {/* 消息列表 */}
-              <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
+            <CardContent className="p-0 h-[calc(100%-57px)] flex flex-col">
+              {/* 消息展示区域 */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4">
                 {messages.map((message) => (
-                  <MessageBubble
+                  <div
                     key={message.id}
-                    role={message.role}
-                    content={message.content}
-                  />
-                ))}
-
-                {streamingContent && (
-                  <MessageBubble
-                    role="assistant"
-                    content={streamingContent}
-                    isStreaming={isStreaming}
-                  />
-                )}
-
-                {/* 常见问题 */}
-                {showCommonQuestions && messages.length > 0 && !streamingContent && (
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs text-muted-foreground mb-2">常见问题：</p>
-                    <div className="grid grid-cols-1 gap-2">
-                      {commonQuestions.map((question, index) => (
-                        <Button
-                          key={index}
-                          variant="ghost"
-                          className="justify-start text-sm text-left p-3 hover:bg-primary/5"
-                          onClick={() => handleCommonQuestionClick(question)}
-                        >
-                          <ChevronRight className="w-4 h-4 mr-2 text-muted-foreground" />
-                          {question}
-                        </Button>
-                      ))}
+                    className={`flex ${message.sender === 'bot' ? 'justify-start' : 'justify-end'}`}
+                  >
+                    <div
+                      className={`max-w-[75%] p-3 rounded-lg ${message.sender === 'bot' 
+                        ? 'bg-primary/10 text-foreground rounded-tr-none' 
+                        : 'bg-primary text-primary-foreground rounded-tl-none'
+                      }`}
+                    >
+                      {message.text}
                     </div>
                   </div>
-                )}
-              </ScrollArea>
+                ))}
+              </div>
 
-              {/* 输入区域 */}
-              <div className="border-t p-3">
-                <div className="flex gap-2">
-                  <Textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="输入消息..."
-                    className="min-h-[50px] resize-none text-sm"
-                    disabled={isLoading}
-                  />
-                  <Button
-                    onClick={handleSend}
-                    disabled={!input.trim() || isLoading}
-                    size="icon"
-                    className="shrink-0 h-[50px] w-[50px]"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Send className="w-4 h-4" />
-                    )}
-                  </Button>
+              {/* 常见问题区域 */}
+              <div className="border-t p-4 space-y-3">
+                <p className="text-sm text-muted-foreground">常见问题：</p>
+                <div className="flex flex-wrap gap-2">
+                  {commonQuestions.map((question, index) => (
+                    <Button
+                      key={index}
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs whitespace-nowrap"
+                      onClick={() => sendMessage(question)}
+                    >
+                      {question}
+                    </Button>
+                  ))}
                 </div>
               </div>
             </CardContent>
